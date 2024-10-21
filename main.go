@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/fverse/protoc-graphql/plugin"
+	plugin "github.com/fverse/protoc-graphql/internal"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -24,6 +24,9 @@ func main() {
 	}
 
 	p := plugin.New(&request)
+
+	// Invoked the codegen
+	p.Generate()
 
 	p.SetSupportOptionalField()
 
