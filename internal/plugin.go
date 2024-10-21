@@ -9,6 +9,11 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
+const (
+	NAME    = "protoc-gen-graphql"
+	VERSION = "v0.1"
+)
+
 type Plugin struct {
 	Request    *pluginpb.CodeGeneratorRequest
 	Response   *pluginpb.CodeGeneratorResponse
@@ -20,6 +25,7 @@ type Plugin struct {
 	schema *Schema
 }
 
+// Sets the support optional field option
 func (p *Plugin) SetSupportOptionalField() {
 	o := uint64(pluginpb.CodeGeneratorResponse_Feature_value["FEATURE_PROTO3_OPTIONAL"])
 	p.Response.SupportedFeatures = &o
@@ -41,19 +47,18 @@ func New(request *pluginpb.CodeGeneratorRequest) *Plugin {
 }
 
 func (p *Plugin) Version() string {
-	v := "protoc-gen-graphql"
-	return v
+	return NAME + " " + VERSION
 }
 
 // Prints an error, and exits.
 func (p *Plugin) Error(err error, msgs ...string) {
 	s := strings.Join(msgs, " ") + ": " + err.Error()
-	log.Print("protoc-gen-graohql: error: ", s)
+	log.Print(NAME+": error: ", s)
 	os.Exit(1)
 }
 
 // Prints a message
 func (p *Plugin) Info(msg ...string) {
 	s := strings.Join(msg, " ")
-	log.Print("prpotoc-gen-graphql: ", s)
+	log.Print(NAME+": ", s)
 }

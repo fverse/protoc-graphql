@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	plugin "github.com/fverse/protoc-graphql/internal"
+	"github.com/fverse/protoc-graphql/internal"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -23,24 +23,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	p := plugin.New(&request)
+	plugin := internal.New(&request)
 
-	// Invoked the codegen
-	p.Generate()
+	// Invokes the codegen
+	plugin.Generate()
 
-	p.SetSupportOptionalField()
+	plugin.SetSupportOptionalField()
 
-	p.Logger.Log("p %v", p.Args)
-
-	output, err := proto.Marshal(p.Response)
+	output, err := proto.Marshal(plugin.Response)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error serializing output: %v\n", err)
-		os.Exit(1)
+		plugin.Error(err, "error serializing output")
 	}
 
 	_, err = os.Stdout.Write(output)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing output: %v\n", err)
-		os.Exit(1)
+		plugin.Error(err, "error writing output")
 	}
 }
