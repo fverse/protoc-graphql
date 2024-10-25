@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
@@ -15,34 +14,31 @@ const (
 )
 
 type Plugin struct {
-	Request    *pluginpb.CodeGeneratorRequest
-	Response   *pluginpb.CodeGeneratorResponse
-	ProtoFiles *descriptorpb.FieldDescriptorProto
+	Request  *pluginpb.CodeGeneratorRequest
+	Response *pluginpb.CodeGeneratorResponse
 
-	Args   *Args
-	Logger *Logger
+	args   *Args
+	logger *Logger
 
-	schema *Schema
+	schema []*Schema
 }
 
 // Sets the support optional field option
-func (p *Plugin) SetSupportOptionalField() {
-	o := uint64(pluginpb.CodeGeneratorResponse_Feature_value["FEATURE_PROTO3_OPTIONAL"])
-	p.Response.SupportedFeatures = &o
+func (plugin *Plugin) SetSupportOptionalField() {
+	opt := uint64(pluginpb.CodeGeneratorResponse_Feature_value["FEATURE_PROTO3_OPTIONAL"])
+	plugin.Response.SupportedFeatures = &opt
 }
 
 // New creates a new Plugin
 func New(request *pluginpb.CodeGeneratorRequest) *Plugin {
 	logger := NewLogger()
 	args := ParseArgs(request.GetParameter(), logger)
-	schema := NewSchema()
 
 	return &Plugin{
 		Request:  request,
 		Response: new(pluginpb.CodeGeneratorResponse),
-		Args:     args,
-		Logger:   logger,
-		schema:   schema,
+		args:     args,
+		logger:   logger,
 	}
 }
 

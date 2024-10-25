@@ -26,7 +26,7 @@ func main() {
 	plugin := internal.New(&request)
 
 	// Invokes the codegen
-	plugin.Generate()
+	plugin.Execute()
 
 	plugin.SetSupportOptionalField()
 
