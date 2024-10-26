@@ -20,7 +20,7 @@ func String(v string) *string {
 // Generates the protoc response
 func (plugin *Plugin) Execute() {
 	for _, protoFile := range plugin.Request.ProtoFile {
-		schema := NewSchema()
+		schema := CreateSchema(protoFile)
 		fileName := schema.FileName(protoFile.Name)
 
 		plugin.Response.File = append(plugin.Response.File, &pluginpb.CodeGeneratorResponse_File{

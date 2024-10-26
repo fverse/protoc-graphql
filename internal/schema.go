@@ -1,28 +1,70 @@
 package internal
 
 import (
+	"log"
 	"path/filepath"
 	"strings"
 
 	"github.com/fverse/protoc-graphql/internal/descriptor"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Schema struct {
 	*strings.Builder
 
-	ObjectTypes []*descriptor.ObjectType
-	InputTypes  []*descriptor.InputType
+	protoFile *descriptorpb.FileDescriptorProto
 
-	Mutations []*descriptor.Mutation
-	Queries   []*descriptor.Query
+	objectTypes []*descriptor.ObjectType
+	inputTypes  []*descriptor.InputType
+	Mutations   []*descriptor.Mutation
+	Queries     []*descriptor.Query
+}
+
+// func getGraphQLType(fieldType *descriptorpb.FieldDescriptorProto_Type) *descriptor.GraphQLType {
+
+// }
+
+func generateFields(fields []*descriptorpb.FieldDescriptorProto) []*descriptor.Field {
+	result := make([]*descriptor.Field, 0, len(fields))
+	for _, field := range fields {
+		f := &descriptor.Field{
+			Name: field.Name,
+		}
+		f.GetType(field)
+		f.IsOptional(field)
+		f.IsRepeated(field)
+		f.Print("field type: ", *f.Name, f.Type.String())
+		result = append(result, f)
+	}
+	return result
+}
+
+// Constructs the Object types from message types and fills the
+func (schema *Schema) ObjectTypes() {
+	for _, message := range schema.protoFile.MessageType {
+		if len(message.Field) > 0 {
+			t := new(descriptor.ObjectType)
+			t.Name = message.Name
+			t.Fields = generateFields(message.Field)
+			schema.objectTypes = append(schema.objectTypes, t)
+		}
+	}
 }
 
 // Creates new Schema
-func NewSchema() *Schema {
-	c := new(Schema)
-	c.Builder = new(strings.Builder)
-	c.WriteHeader()
-	return c
+func CreateSchema(protoFile *descriptorpb.FileDescriptorProto) *Schema {
+	schema := new(Schema)
+	schema.Builder = new(strings.Builder)
+	schema.protoFile = protoFile
+
+	// Write the header content to the string builder
+	schema.WriteHeader()
+
+	// Construct Object types
+	schema.ObjectTypes()
+
+	// TODO: Generate Input types
+	return schema
 }
 
 // Puts a new line in the generated content
@@ -54,4 +96,10 @@ func (p *Schema) Write(s string) {
 func (p *Schema) FileName(filename *string) string {
 	ext := filepath.Ext(*filename)
 	return strings.TrimSuffix(*filename, ext) + ".graphql"
+}
+
+// Prints a message
+func (p *Schema) Print(msg ...string) {
+	s := strings.Join(msg, " ")
+	log.Print(s)
 }
