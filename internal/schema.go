@@ -20,10 +20,6 @@ type Schema struct {
 	Queries     []*descriptor.Query
 }
 
-// func getGraphQLType(fieldType *descriptorpb.FieldDescriptorProto_Type) *descriptor.GraphQLType {
-
-// }
-
 func generateFields(fields []*descriptorpb.FieldDescriptorProto) []*descriptor.Field {
 	result := make([]*descriptor.Field, 0, len(fields))
 	for _, field := range fields {
