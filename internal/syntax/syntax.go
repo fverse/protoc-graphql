@@ -2,6 +2,13 @@ package syntax
 
 type Symbol string
 
+func (symbol *Symbol) String() string {
+	if symbol == nil {
+		return ""
+	}
+	return string(*symbol)
+}
+
 const (
 	Bang      Symbol = "!"
 	Colon     Symbol = ":"
@@ -13,6 +20,13 @@ const (
 )
 
 type Keyword string
+
+func (keyword *Keyword) String() string {
+	if keyword == nil {
+		return ""
+	}
+	return string(*keyword)
+}
 
 const (
 	// TypeScript

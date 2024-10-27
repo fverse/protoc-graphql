@@ -11,6 +11,8 @@ var wellKnownTypes = map[string]string{
 	".google.protobuf.Any":       "String",
 }
 
+// Checks if the fields type is Protobuf's "well-known" type
+// https://protobuf.dev/reference/protobuf/google.protobuf/
 func isWellKnownType(field *descriptorpb.FieldDescriptorProto) bool {
 	return field.GetTypeName() == ".google.protobuf.Timestamp" || field.GetTypeName() == ".google.protobuf.Any"
 }

@@ -34,6 +34,8 @@ func New(request *pluginpb.CodeGeneratorRequest) *Plugin {
 	logger := NewLogger()
 	args := ParseArgs(request.GetParameter(), logger)
 
+	logger.Log("files: %v", request.FileToGenerate)
+
 	return &Plugin{
 		Request:  request,
 		Response: new(pluginpb.CodeGeneratorResponse),

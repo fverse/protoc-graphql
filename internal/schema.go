@@ -6,43 +6,108 @@ import (
 	"strings"
 
 	"github.com/fverse/protoc-graphql/internal/descriptor"
+	"github.com/fverse/protoc-graphql/options"
+	"github.com/fverse/protoc-graphql/pkg/utils"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Schema struct {
 	*strings.Builder
 
+	// Plugin's parsed command line arguments
+	args *Args
+
 	protoFile *descriptorpb.FileDescriptorProto
+	fileName  *string
 
 	objectTypes []*descriptor.ObjectType
+	enums       []*descriptor.Enumeration
 	inputTypes  []*descriptor.InputType
-	Mutations   []*descriptor.Mutation
-	Queries     []*descriptor.Query
+	mutations   []*descriptor.Mutation
+	queries     []*descriptor.Query
 }
 
+// Checks the keepCase option for the fields
+func keepCase(fieldOptions *descriptorpb.FieldOptions) bool {
+	if proto.HasExtension(fieldOptions, options.E_KeepCase) {
+		ext := proto.GetExtension(fieldOptions, options.E_KeepCase)
+		return ext.(bool)
+	}
+	return false
+}
+
+// Constructs the Object types from message types and fills the schema.objectTypes
+// Since
+func (schema *Schema) makeObjectTypes(messages []*descriptorpb.DescriptorProto) {
+	for _, message := range messages {
+		if len(message.Field) > 0 {
+			objectType := new(descriptor.ObjectType)
+			objectType.Name = message.Name
+
+			// Generate type fields
+			objectType.Fields = generateFields(message.Field)
+
+			// Construct embedded object types
+			for _, nested := range message.NestedType {
+				schema.makeObjectTypes([]*descriptorpb.DescriptorProto{nested})
+			}
+
+			// Construct embedded enums
+			for _, enumType := range message.EnumType {
+				enum := new(descriptor.Enumeration)
+				enum.Name = enumType.Name
+				for _, value := range enumType.Value {
+					enum.Values = append(enum.Values, enumValues(value))
+				}
+				schema.enums = append(schema.enums, enum)
+			}
+			schema.objectTypes = append(schema.objectTypes, objectType)
+		}
+	}
+}
+
+// Return the string value of the provided enum value
+func enumValues(value *descriptorpb.EnumValueDescriptorProto) *string {
+	return value.Name
+}
+
+// Constructs the fields of an object type
 func generateFields(fields []*descriptorpb.FieldDescriptorProto) []*descriptor.Field {
 	result := make([]*descriptor.Field, 0, len(fields))
+
 	for _, field := range fields {
 		f := &descriptor.Field{
 			Name: field.Name,
 		}
+		// Obtain the type of field
 		f.GetType(field)
+
+		// Sets wether the field is optional or not
 		f.IsOptional(field)
+
+		// Sets wether the field is required or not
 		f.IsRepeated(field)
-		f.Print("field type: ", *f.Name, f.Type.String())
+
+		if !keepCase(field.GetOptions()) {
+			f.Name = utils.String(utils.CamelCase(*field.Name))
+		}
 		result = append(result, f)
 	}
 	return result
 }
 
-// Constructs the Object types from message types and fills the
-func (schema *Schema) ObjectTypes() {
-	for _, message := range schema.protoFile.MessageType {
-		if len(message.Field) > 0 {
-			t := new(descriptor.ObjectType)
-			t.Name = message.Name
-			t.Fields = generateFields(message.Field)
-			schema.objectTypes = append(schema.objectTypes, t)
+// Constructs mutations from service methods and fills the schema.mutations
+func (schema *Schema) Mutations() {
+}
+
+// Constructs the Object types from message types and fills the schema.objectTypes
+func (schema *Schema) Queries() {
+	for _, service := range schema.protoFile.Service {
+		for _, method := range service.Method {
+			query := new(descriptor.Query)
+			query.Name = method.Name
+			schema.queries = append(schema.queries, query)
 		}
 	}
 }
@@ -53,49 +118,75 @@ func CreateSchema(protoFile *descriptorpb.FileDescriptorProto) *Schema {
 	schema.Builder = new(strings.Builder)
 	schema.protoFile = protoFile
 
+	// Crete the filename for the output file
+	schema.FileName(protoFile.Name)
+
 	// Write the header content to the string builder
 	schema.WriteHeader()
 
 	// Construct Object types
-	schema.ObjectTypes()
+	schema.makeObjectTypes(protoFile.MessageType)
+
+	schema.Queries()
 
 	// TODO: Generate Input types
 	return schema
 }
 
 // Puts a new line in the generated content
-func (c *Schema) NewLine() {
-	c.Write("\n")
+func (schema *Schema) NewLine(length ...int) {
+	if len(length) == 0 {
+		schema.Write("\n")
+		return
+	}
+	for i := 0; i < length[0]; i++ {
+		schema.Write("\n")
+	}
 }
 
 // Adds a space to the generated content
-func (c *Schema) Space() {
-	c.Write(" ")
+func (schema *Schema) Space(length ...int) {
+	if len(length) == 0 {
+		schema.Write(" ")
+		return
+	}
+	for i := 0; i < length[0]; i++ {
+		schema.Write(" ")
+	}
 }
 
 // Puts a graphql comment in the generated content
-func (c *Schema) Comment(s string) {
-	c.Write("#")
-	c.Space()
-	c.Write(s)
+func (schema *Schema) Comment(s string) {
+	schema.Write("#")
+	schema.Space()
+	schema.Write(s)
 }
 
 // Write writes a string to the string builder
-func (p *Schema) Write(s string) {
+func (schema *Schema) Write(s string) {
 	if len(s) == 0 {
 		return
 	}
-	p.WriteString(s)
+	schema.WriteString(s)
 }
 
 // Creates a file name based on the given proto file name
-func (p *Schema) FileName(filename *string) string {
+func (schema *Schema) FileName(filename *string) {
 	ext := filepath.Ext(*filename)
-	return strings.TrimSuffix(*filename, ext) + ".graphql"
+	schema.fileName = utils.String(strings.TrimSuffix(*filename, ext) + ".graphql")
 }
 
 // Prints a message
-func (p *Schema) Print(msg ...string) {
+func (schema *Schema) Print(msg ...string) {
 	s := strings.Join(msg, " ")
 	log.Print(s)
+}
+
+// Write the header content
+func (schema *Schema) WriteHeader() {
+	schema.NewLine()
+	schema.Comment("Auto-generated by protoc-gen-graphql. DO NOT EDIT\n")
+	schema.Comment(NAME + " " + VERSION)
+	schema.NewLine()
+	schema.NewLine()
 }

@@ -4,24 +4,50 @@ import (
 	"log"
 	"strings"
 
+	"github.com/fverse/protoc-graphql/pkg/utils"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// GraphQLType represents a GraphQL type
+type GraphQLType string
+
+const (
+	Int     GraphQLType = "Int"
+	Float   GraphQLType = "Float"
+	Boolean GraphQLType = "Boolean"
+	String  GraphQLType = "String"
+	Object  GraphQLType = "type"
+	Input   GraphQLType = "input"
+	Enum    GraphQLType = "enum"
+	Unknown GraphQLType = "Unknown"
+)
+
+// Represents GraphQL Mutation type
 type Mutation struct {
 	Name    *string
 	Input   *InputType
 	Payload *ObjectType
+	Target  *string
 }
 
+// Represents GraphQL Query type
 type Query struct {
 	Name    *string
 	Input   *InputType
 	Payload *ObjectType
+	Target  *string
 }
 
 type ObjectType struct {
 	Fields []*Field
 	Name   *string
+	Nested []*ObjectType
+	Enums  []*Enumeration
+}
+
+type Enumeration struct {
+	Name   *string
+	Values []*string
 }
 
 type InputType struct {
@@ -29,65 +55,16 @@ type InputType struct {
 	Name   *string
 }
 
+// Field represents a field inside a an object type
 type Field struct {
 	Name     *string
-	Type     *Scalar
+	Type     *GraphQLType
 	TypeName *string
 	Optional *bool
 	Repeated *bool
 }
 
-type Scalar string
-
-const (
-	Int     Scalar = "Int"
-	Float   Scalar = "Float"
-	Boolean Scalar = "Bool"
-	String  Scalar = "String"
-	Object  Scalar = "type"
-	Input   Scalar = "input"
-	Enum    Scalar = "enum"
-	Unknown Scalar = "Unknown"
-)
-
-func (s *Scalar) String() string {
-	if s == nil {
-		return ""
-	}
-	return string(*s)
-}
-
-// Copies the given scalar value and returns a pointer to it.
-func scalar(v Scalar) *Scalar {
-	return &v
-}
-
-// Stores value of v and returns a pointer to it
-func Bool(v bool) *bool {
-	return &v
-}
-
-// Check if the field is optional
-func (f *Field) IsOptional(field *descriptorpb.FieldDescriptorProto) {
-	f.Optional = Bool(isOptional(field))
-}
-
-// Checks if the field is required
-func (f *Field) IsRequired(field *descriptorpb.FieldDescriptorProto) {
-	f.Optional = Bool(!isRequired(field))
-}
-
-// Check if the field is repeated
-func (f *Field) IsRepeated(field *descriptorpb.FieldDescriptorProto) {
-	f.Repeated = Bool(isRepeated(field))
-}
-
-// Prints a message
-func (p *Field) Print(msg ...string) {
-	s := strings.Join(msg, " ")
-	log.Print(s)
-}
-
+// GetType obtains the type of field
 func (f *Field) GetType(field *descriptorpb.FieldDescriptorProto) {
 	switch *field.Type {
 	case descriptorpb.FieldDescriptorProto_TYPE_INT32,
@@ -106,13 +83,45 @@ func (f *Field) GetType(field *descriptorpb.FieldDescriptorProto) {
 			// TODO: This needs to mapped to a custom Gql scalar type instead of string
 			f.Type = scalar(String)
 		} else {
-			f.Type = scalar(Object)
-			f.TypeName = getTypeName(field)
+			f.Type = (*GraphQLType)(getTypeName(field))
 		}
 	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
-		f.Type = scalar(Enum)
-		f.TypeName = getTypeName(field)
+		f.Type = (*GraphQLType)(getTypeName(field))
 	default:
 		f.Type = scalar(Unknown) // TODO: handle this
 	}
+}
+
+// String returns the actual string value of the GraphQLType type
+func (s *GraphQLType) String() string {
+	if s == nil {
+		return ""
+	}
+	return string(*s)
+}
+
+// Copies the given scalar value and returns a pointer to it.
+func scalar(v GraphQLType) *GraphQLType {
+	return &v
+}
+
+// Check if the field is optional
+func (f *Field) IsOptional(field *descriptorpb.FieldDescriptorProto) {
+	f.Optional = utils.Bool(isOptional(field))
+}
+
+// Checks if the field is required
+func (f *Field) IsRequired(field *descriptorpb.FieldDescriptorProto) {
+	f.Optional = utils.Bool(!isRequired(field))
+}
+
+// Check if the field is repeated
+func (f *Field) IsRepeated(field *descriptorpb.FieldDescriptorProto) {
+	f.Repeated = utils.Bool(isRepeated(field))
+}
+
+// Prints a message
+func (p *Field) Print(msg ...string) {
+	s := strings.Join(msg, " ")
+	log.Print(s)
 }

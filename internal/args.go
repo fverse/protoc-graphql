@@ -2,6 +2,8 @@ package internal
 
 import (
 	"strings"
+
+	"github.com/fverse/protoc-graphql/pkg/utils"
 )
 
 type Args struct {
@@ -20,10 +22,9 @@ type Args struct {
 	// What to prefix or suffix with the input type names.
 	// Word 'Input' is default for suffix and letter 'I' is default for prefix
 	Affix string
-}
-
-func parseTrue(s string) bool {
-	return s == "true"
+	// If true, generate schema against all the files explicitly listed in the command line
+	// and everything they import. Default to false
+	All bool
 }
 
 func ParseArgs(params string, logger *Logger) *Args {
@@ -48,11 +49,7 @@ func ParseArgs(params string, logger *Logger) *Args {
 		case "keep_case":
 			args.KeepCase = true
 		case "keep_prefix":
-			if parseTrue(v) {
-				args.KeepPrefix = true
-			} else {
-				args.KeepPrefix = false
-			}
+			args.KeepPrefix = utils.ParseTrue(v)
 		case "combine_output":
 			args.CombineOutput = true
 		case "output_filenames":
@@ -61,6 +58,8 @@ func ParseArgs(params string, logger *Logger) *Args {
 			args.InputNaming = v
 		case "affix":
 			args.Affix = v
+		case "all":
+			args.All = utils.ParseTrue(v)
 		}
 	}
 	return &args
