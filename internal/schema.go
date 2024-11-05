@@ -121,9 +121,6 @@ func CreateSchema(protoFile *descriptorpb.FileDescriptorProto) *Schema {
 	// Crete the filename for the output file
 	schema.FileName(protoFile.Name)
 
-	// Write the header content to the string builder
-	schema.WriteHeader()
-
 	// Construct Object types
 	schema.makeObjectTypes(protoFile.MessageType)
 

@@ -26,6 +26,9 @@ func (schema *Schema) generateTypes() {
 }
 
 func (schema *Schema) generate() {
+	// Write the header content to the string builder
+	schema.WriteHeader()
+
 	// Generate types
 	schema.generateTypes()
 
