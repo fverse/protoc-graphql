@@ -38,7 +38,6 @@ func keepCase(fieldOptions *descriptorpb.FieldOptions) bool {
 }
 
 // Constructs the Object types from message types and fills the schema.objectTypes
-// Since
 func (schema *Schema) makeObjectTypes(messages []*descriptorpb.DescriptorProto) {
 	for _, message := range messages {
 		if len(message.Field) > 0 {
