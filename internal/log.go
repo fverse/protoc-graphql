@@ -17,6 +17,7 @@ func NewLogger() *Logger {
 		fmt.Fprintf(os.Stderr, "Error creating debug log file: %v\n", err)
 		return nil
 	}
+	defer logFile.Close()
 	logger := log.New(logFile, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 	return &Logger{logger}
 }
