@@ -35,8 +35,8 @@ const (
 	Enum      Keyword = "enum"
 
 	// GraphQL
-	Input    Keyword = "input"
-	Type     Keyword = "type"
-	Mutation Keyword = "Mutation"
-	Queries  Keyword = "Queries"
+	Input      Keyword = "input"
+	ObjectType Keyword = "type"
+	Mutation   Keyword = "Mutation"
+	Queries    Keyword = "Queries"
 )

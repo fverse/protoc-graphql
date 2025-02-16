@@ -6,7 +6,7 @@ import (
 )
 
 func (schema *Schema) generateType(object *descriptor.ObjectType) {
-	schema.WriteTypeName(object.Name)
+	schema.WriteTypeName(syntax.ObjectType, object.Name)
 
 	for _, field := range object.Fields {
 		schema.Space(3)
@@ -25,6 +25,21 @@ func (schema *Schema) generateTypes() {
 	}
 }
 
+// Generate enums
+func (schema *Schema) generateEnums() {
+	for _, enum := range schema.enums {
+		schema.WriteTypeName(syntax.Enum, enum.Name)
+
+		for _, value := range enum.Values {
+			schema.Space(3)
+			schema.Write(*value)
+			schema.NewLine()
+		}
+		schema.Write(string(syntax.RBrace))
+		schema.NewLine(2)
+	}
+}
+
 func (schema *Schema) generate() {
 	// Write the header content to the string builder
 	schema.WriteHeader()
@@ -33,6 +48,7 @@ func (schema *Schema) generate() {
 	schema.generateTypes()
 
 	// TODO: Generate enums
+	schema.generateEnums()
 
 	// TODO: Generate queries
 
@@ -40,8 +56,8 @@ func (schema *Schema) generate() {
 }
 
 // Writes the type's name
-func (schema *Schema) WriteTypeName(name *string) {
-	schema.Write(string(syntax.Type))
+func (schema *Schema) WriteTypeName(keyWord syntax.Keyword, name *string) {
+	schema.Write(string(keyWord))
 	schema.Space()
 	schema.Write(*name)
 	schema.Space()

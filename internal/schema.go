@@ -111,6 +111,18 @@ func (schema *Schema) Queries() {
 	}
 }
 
+// Construct enums
+func (schema *Schema) Enums() {
+	for _, enumType := range schema.protoFile.EnumType {
+		enum := new(descriptor.Enumeration)
+		enum.Name = enumType.Name
+		for _, value := range enumType.Value {
+			enum.Values = append(enum.Values, enumValues(value))
+		}
+		schema.enums = append(schema.enums, enum)
+	}
+}
+
 // Creates new Schema
 func CreateSchema(protoFile *descriptorpb.FileDescriptorProto) *Schema {
 	schema := new(Schema)
@@ -122,6 +134,8 @@ func CreateSchema(protoFile *descriptorpb.FileDescriptorProto) *Schema {
 
 	// Construct Object types
 	schema.makeObjectTypes(protoFile.MessageType)
+
+	schema.Enums()
 
 	schema.Queries()
 
