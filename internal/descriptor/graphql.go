@@ -25,17 +25,17 @@ const (
 // Represents GraphQL Mutation type
 type Mutation struct {
 	Name    *string
-	Input   *InputType
+	Input   *GqlInput
 	Payload *ObjectType
-	Target  *string
+	Options *MethodOptions
 }
 
 // Represents GraphQL Query type
 type Query struct {
 	Name    *string
-	Input   *InputType
-	Payload *ObjectType
-	Target  *string
+	Input   *GqlInput
+	Payload *GqlInput
+	Options *MethodOptions
 }
 
 type ObjectType struct {
@@ -62,6 +62,23 @@ type Field struct {
 	TypeName *string
 	Optional *bool
 	Repeated *bool
+}
+
+type GqlInput struct {
+	Param     string
+	Type      string
+	Array     bool
+	Primitive bool
+	Empty     bool
+	Optional  bool
+}
+
+type MethodOptions struct {
+	Kind      string
+	Target    uint32
+	GqlInput  *GqlInput
+	GqlOutput string
+	Skip      bool
 }
 
 // GetType obtains the type of field

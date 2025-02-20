@@ -12,6 +12,7 @@ extend google.protobuf.MethodOptions {
 message GqlInput {
   string param = 50031;
   string type = 50032;
+  string optional = 50033;
 }
 
 message MethodOptions {

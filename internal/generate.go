@@ -1,9 +1,16 @@
 package internal
 
 import (
+	"fmt"
+
 	"github.com/fverse/protoc-graphql/internal/descriptor"
 	"github.com/fverse/protoc-graphql/internal/syntax"
+	"github.com/fverse/protoc-graphql/pkg/utils"
 )
+
+const dotPackage string = ".hello."
+
+var empty = dotPackage + "Empty"
 
 func (schema *Schema) generateType(object *descriptor.ObjectType) {
 	schema.WriteTypeName(syntax.ObjectType, object.Name)
@@ -40,6 +47,31 @@ func (schema *Schema) generateEnums() {
 	}
 }
 
+// Generate queries
+func (schema *Schema) generateQueries() {
+	schema.Write("type Query {\n")
+	schema.NewLine()
+
+	for _, query := range schema.queries {
+		if query.Input.Empty {
+			schema.Write(fmt.Sprintf("  %s: %s\n", utils.LowercaseFirst(*query.Name), query.Payload.Type))
+		} else {
+			if query.Options.GqlInput.Optional {
+				schema.Write(fmt.Sprintf("  %s(%s: %s): %s!\n", utils.LowercaseFirst(*query.Name),
+					query.Input.Param, query.Input.Type, query.Payload.Type))
+			} else {
+				schema.Write(fmt.Sprintf("  %s(%s: %s!): %s!\n", utils.LowercaseFirst(*query.Name),
+					query.Input.Param, query.Input.Type, query.Payload.Type))
+			}
+		}
+		schema.NewLine()
+		// q(input: InputType): ObjectType
+	}
+	schema.NewLine()
+	schema.Write("}")
+	schema.NewLine()
+}
+
 func (schema *Schema) generate() {
 	// Write the header content to the string builder
 	schema.WriteHeader()
@@ -47,10 +79,11 @@ func (schema *Schema) generate() {
 	// Generate types
 	schema.generateTypes()
 
-	// TODO: Generate enums
+	// Generate enums
 	schema.generateEnums()
 
-	// TODO: Generate queries
+	// Generate queries
+	schema.generateQueries()
 
 	// TODO: Generate mutations
 }
@@ -58,6 +91,15 @@ func (schema *Schema) generate() {
 // Writes the type's name
 func (schema *Schema) WriteTypeName(keyWord syntax.Keyword, name *string) {
 	schema.Write(string(keyWord))
+	schema.Space()
+	schema.Write(*name)
+	schema.Space()
+	schema.Write(string(syntax.LBrace))
+	schema.NewLine()
+}
+
+func (schema *Schema) WriteMethod(kind, name *string) {
+	schema.Write("")
 	schema.Space()
 	schema.Write(*name)
 	schema.Space()
