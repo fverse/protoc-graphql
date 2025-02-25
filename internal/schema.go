@@ -86,7 +86,7 @@ func generateFields(fields []*descriptorpb.FieldDescriptorProto) []*descriptor.F
 		f.GetType(field)
 
 		// Sets wether the field is optional or not
-		f.IsOptional(field)
+		f.IsRequired(field)
 
 		// Sets wether the field is required or not
 		f.IsRepeated(field)

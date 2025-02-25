@@ -12,10 +12,27 @@ func (schema *Schema) generateType(object *descriptor.ObjectType) {
 	schema.WriteTypeName(syntax.ObjectType, object.Name)
 
 	for _, field := range object.Fields {
-		schema.Space(3)
+		schema.Space(2)
 		schema.Write(*field.Name + string(syntax.Colon))
 		schema.Space()
-		schema.Write(field.Type.String())
+
+		if field.IsList {
+			schema.Write(string(syntax.LBracket))
+			schema.Write(field.Type.String())
+
+			if !field.Optional {
+				schema.Write(string(syntax.Bang))
+			}
+
+			schema.Write(string(syntax.RBracket))
+		} else {
+			schema.Write(field.Type.String())
+
+			if !field.Optional {
+				schema.Write(string(syntax.Bang))
+			}
+		}
+
 		schema.NewLine()
 	}
 	schema.Write(string(syntax.RBrace))
@@ -25,16 +42,31 @@ func (schema *Schema) generateType(object *descriptor.ObjectType) {
 	schema.WriteString(fmt.Sprintf("input I%s {\n", *object.Name))
 
 	for _, field := range object.Fields {
-		schema.Space(3)
+		schema.Space(2)
 		schema.Write(*field.Name + string(syntax.Colon))
 		schema.Space()
+
+		if field.IsList {
+			schema.Write(string(syntax.LBracket))
+		}
+
 		if field.NonPrimitive {
 			schema.Write("I" + field.Type.String())
 		} else {
 			schema.Write(field.Type.String())
 		}
+
+		if !field.Optional {
+			schema.Write(string(syntax.Bang))
+		}
+
+		if field.IsList {
+			schema.Write(string(syntax.RBracket))
+		}
+
 		schema.NewLine()
 	}
+
 	schema.Write(string(syntax.RBrace))
 	schema.NewLine(2)
 }

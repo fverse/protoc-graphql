@@ -17,6 +17,8 @@ const (
 	RBrace    Symbol = "}"
 	LPara     Symbol = "("
 	RPara     Symbol = ")"
+	LBracket  Symbol = "["
+	RBracket  Symbol = "]"
 )
 
 type Keyword string

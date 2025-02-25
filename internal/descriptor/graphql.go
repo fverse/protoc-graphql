@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/fverse/protoc-graphql/options"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -122,7 +123,7 @@ func (f *Field) IsOptional(field *descriptorpb.FieldDescriptorProto) {
 
 // Checks if the field is required
 func (f *Field) IsRequired(field *descriptorpb.FieldDescriptorProto) {
-	f.Optional = !isRequired(field)
+	f.Optional = !fieldRequired(field.GetOptions()) && !isRequired(field)
 }
 
 // Check if the field is repeated
@@ -134,4 +135,13 @@ func (f *Field) IsRepeated(field *descriptorpb.FieldDescriptorProto) {
 func (p *Field) Print(msg ...string) {
 	s := strings.Join(msg, " ")
 	log.Print(s)
+}
+
+func fieldRequired(fieldOptions *descriptorpb.FieldOptions) bool {
+	// options := field.GetOptions()
+	if proto.HasExtension(fieldOptions, options.E_Required) {
+		ext := proto.GetExtension(fieldOptions, options.E_Required)
+		return ext.(bool)
+	}
+	return false
 }
