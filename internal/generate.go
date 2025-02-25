@@ -8,10 +8,6 @@ import (
 	"github.com/fverse/protoc-graphql/pkg/utils"
 )
 
-const dotPackage string = ".hello."
-
-var empty = dotPackage + "Empty"
-
 func (schema *Schema) generateType(object *descriptor.ObjectType) {
 	schema.WriteTypeName(syntax.ObjectType, object.Name)
 
@@ -20,6 +16,23 @@ func (schema *Schema) generateType(object *descriptor.ObjectType) {
 		schema.Write(*field.Name + string(syntax.Colon))
 		schema.Space()
 		schema.Write(field.Type.String())
+		schema.NewLine()
+	}
+	schema.Write(string(syntax.RBrace))
+	schema.NewLine(2)
+
+	// Generate input type
+	schema.WriteString(fmt.Sprintf("input I%s {\n", *object.Name))
+
+	for _, field := range object.Fields {
+		schema.Space(3)
+		schema.Write(*field.Name + string(syntax.Colon))
+		schema.Space()
+		if field.NonPrimitive {
+			schema.Write("I" + field.Type.String())
+		} else {
+			schema.Write(field.Type.String())
+		}
 		schema.NewLine()
 	}
 	schema.Write(string(syntax.RBrace))
@@ -50,24 +63,43 @@ func (schema *Schema) generateEnums() {
 // Generate queries
 func (schema *Schema) generateQueries() {
 	schema.Write("type Query {\n")
-	schema.NewLine()
 
 	for _, query := range schema.queries {
 		if query.Input.Empty {
-			schema.Write(fmt.Sprintf("  %s: %s\n", utils.LowercaseFirst(*query.Name), query.Payload.Type))
+			schema.Write(fmt.Sprintf("  %s: %s\n", utils.LowercaseFirst(*query.Name), *query.Payload))
 		} else {
-			if query.Options.GqlInput.Optional {
+			if query.Input.Optional {
 				schema.Write(fmt.Sprintf("  %s(%s: %s): %s!\n", utils.LowercaseFirst(*query.Name),
-					query.Input.Param, query.Input.Type, query.Payload.Type))
+					query.Input.Param, query.Input.Type, *query.Payload))
 			} else {
 				schema.Write(fmt.Sprintf("  %s(%s: %s!): %s!\n", utils.LowercaseFirst(*query.Name),
-					query.Input.Param, query.Input.Type, query.Payload.Type))
+					query.Input.Param, query.Input.Type, *query.Payload))
 			}
 		}
-		schema.NewLine()
 		// q(input: InputType): ObjectType
 	}
+	schema.Write("}")
 	schema.NewLine()
+	schema.NewLine()
+}
+
+func (schema *Schema) generateMutations() {
+	schema.Write("type Mutation {\n")
+
+	for _, mutation := range schema.mutations {
+		if mutation.Input.Empty {
+			schema.Write(fmt.Sprintf("  %s: %s\n", utils.LowercaseFirst(*mutation.Name), *mutation.Payload))
+		} else {
+			if mutation.Input.Optional {
+				schema.Write(fmt.Sprintf("  %s(%s: %s): %s!\n", utils.LowercaseFirst(*mutation.Name),
+					mutation.Input.Param, mutation.Input.Type, *mutation.Payload))
+			} else {
+				schema.Write(fmt.Sprintf("  %s(%s: %s!): %s!\n", utils.LowercaseFirst(*mutation.Name),
+					mutation.Input.Param, mutation.Input.Type, *mutation.Payload))
+			}
+		}
+		// q(input: InputType): ObjectType
+	}
 	schema.Write("}")
 	schema.NewLine()
 }
@@ -82,10 +114,11 @@ func (schema *Schema) generate() {
 	// Generate enums
 	schema.generateEnums()
 
-	// Generate queries
+	// // Generate queries
 	schema.generateQueries()
 
-	// TODO: Generate mutations
+	// Generate mutations
+	schema.generateMutations()
 }
 
 // Writes the type's name

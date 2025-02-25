@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/fverse/protoc-graphql/pkg/utils"
+	"github.com/fverse/protoc-graphql/options"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -25,17 +25,19 @@ const (
 // Represents GraphQL Mutation type
 type Mutation struct {
 	Name    *string
-	Input   *GqlInput
-	Payload *ObjectType
-	Options *MethodOptions
+	Target  uint32
+	Input   *options.GqlInput
+	Payload *string
+	Skip    bool
 }
 
 // Represents GraphQL Query type
 type Query struct {
 	Name    *string
-	Input   *GqlInput
-	Payload *GqlInput
-	Options *MethodOptions
+	Target  uint32
+	Input   *options.GqlInput
+	Payload *string
+	Skip    bool
 }
 
 type ObjectType struct {
@@ -57,28 +59,18 @@ type InputType struct {
 
 // Field represents a field inside a an object type
 type Field struct {
-	Name     *string
-	Type     *GraphQLType
-	TypeName *string
-	Optional *bool
-	Repeated *bool
+	Name         *string
+	Type         *GraphQLType
+	NonPrimitive bool
+	Optional     bool
+	IsList       bool
 }
 
-type GqlInput struct {
-	Param     string
+type GqlOutput struct {
 	Type      string
 	Array     bool
 	Primitive bool
 	Empty     bool
-	Optional  bool
-}
-
-type MethodOptions struct {
-	Kind      string
-	Target    uint32
-	GqlInput  *GqlInput
-	GqlOutput string
-	Skip      bool
 }
 
 // GetType obtains the type of field
@@ -101,6 +93,7 @@ func (f *Field) GetType(field *descriptorpb.FieldDescriptorProto) {
 			f.Type = scalar(String)
 		} else {
 			f.Type = (*GraphQLType)(getTypeName(field))
+			f.NonPrimitive = true
 		}
 	case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
 		f.Type = (*GraphQLType)(getTypeName(field))
@@ -124,17 +117,17 @@ func scalar(v GraphQLType) *GraphQLType {
 
 // Check if the field is optional
 func (f *Field) IsOptional(field *descriptorpb.FieldDescriptorProto) {
-	f.Optional = utils.Bool(isOptional(field))
+	f.Optional = isOptional(field)
 }
 
 // Checks if the field is required
 func (f *Field) IsRequired(field *descriptorpb.FieldDescriptorProto) {
-	f.Optional = utils.Bool(!isRequired(field))
+	f.Optional = !isRequired(field)
 }
 
 // Check if the field is repeated
 func (f *Field) IsRepeated(field *descriptorpb.FieldDescriptorProto) {
-	f.Repeated = utils.Bool(isRepeated(field))
+	f.IsList = isRepeated(field)
 }
 
 // Prints a message
